@@ -174,7 +174,8 @@ compile' n h ((x:xs):ys) trail =
                   LoadW(n+2, n+1)    :
                   Jnz(n+2, h+1, h+2) :
                   Label(h+1)         :
-                  compile' (n+3) (h+3) (ast:(xs:ys)) ([Jmp(h), Label(h+2)]:trail)
+                  compile' (n+3) (h+3) (ast:(xs:ys)) newtrail
+      where newtrail = ([Jmp(h), Label(h+2)]:trail)
 compile' n h ([]:ys) (t:ts) = t ++ (compile' n h ys ts)
 compile' _ _ _ _ = []
 
