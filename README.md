@@ -13,7 +13,7 @@ Usage:
 
 	$ bfc sources... > program.ssa
 	$ qbe program.ssa > program.S
-	$ cc -o program program.S && ./prog
+	$ cc -o program program.S && ./program
 
 bfc reads from standard input if no arguments are given.
 
