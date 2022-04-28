@@ -130,7 +130,7 @@ instance Show Instruction where
 -- even if it's a SSA.
 cell = 1
 
-compile' :: Int -> Int -> [AST] -> [[Instruction]] -> [Instruction]
+compile' :: Int -> Int -> [AST] -> [Int] -> [Instruction]
 compile' n h ((x:xs):ys) trail =
   case x of
     Inc -> LoadL(n+1, cell)  :
@@ -164,9 +164,8 @@ compile' n h ((x:xs):ys) trail =
                   LoadW(n+2, n+1)    :
                   Jnz(n+2, h+1, h+2) :
                   Label(h+1)         :
-                  compile' (n+3) (h+3) (ast:(xs:ys)) newtrail
-      where newtrail = ([Jmp(h), Label(h+2)]:trail)
-compile' n h ([]:ys) (t:ts) = t ++ (compile' n h ys ts)
+                  compile' (n+3) (h+3) (ast:(xs:ys)) (h:trail)
+compile' n h ([]:ys) (t:ts) = Jmp(t) : Label(t+2) : compile' n h ys ts
 compile' _ _ _ _ = []
 
 compile ast = compile' 1 1 [ast] []
