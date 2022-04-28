@@ -61,37 +61,27 @@ data Expr = Inc
 
 type AST = [Expr]
 
-data State = State ([AST], [Token]) deriving (Show)
+pushexpr expr (y:ys) = (expr:y):ys
 
-initialState tokens = State ([[]], tokens)
-
-finalize (State ([x], _)) = Just x
-finalize _ = Nothing
-
-simplexpr :: Expr -> [AST] -> [Token] -> State
-simplexpr e (x:xs) tokens = State ((x ++ [e]):xs, tokens)
-
-translate :: Token -> Expr
-translate x = case x of
-                Plus    -> Inc
-                Minus   -> Dec
-                Lesser  -> ShiftLeft
-                Greater -> ShiftRight
-                Point   -> Output
-                Comma   -> Input
-
-parser :: State -> Maybe State
-parser (State (stack, (x:xs))) =
+parser :: [Token] -> [AST] -> Either String AST
+parser (x:xs) stack =
   case x of
-    BracketOpen -> parser $ State ([]:stack, xs)
+    BracketOpen -> parser xs ([]:stack)
     BracketClose -> case stack of
-                      (y:ys) -> parser $ simplexpr (Loop y) (ys) xs
-                      _      -> Nothing
-    _ -> parser $ simplexpr (translate x) stack xs
-parser state = Just state
+                      (y:ys) -> parser xs $ pushexpr (Loop (reverse y)) ys
+                      _      -> Left "unexpected end of loop"
+    _ -> parser xs $ pushexpr expr stack
+      where expr = case x of
+                     Plus    -> Inc
+                     Minus   -> Dec
+                     Lesser  -> ShiftLeft
+                     Greater -> ShiftRight
+                     Point   -> Output
+                     Comma   -> Input
+parser _ [x] = return (reverse x)
+parser _ _ = Left "unterminated loop"
 
-parse :: [Token] -> Maybe AST
-parse tokens = parser (initialState tokens) >>= finalize
+parse toks = parser toks [[]]
 
 prologue = "export function w $main() {\n" ++
            "@start\n" ++
@@ -184,10 +174,10 @@ compile ast = compile' 1 1 [ast] []
 compileProg program = do
   let t = parse $ tokenize program in
     case t of
-      Just ast -> do putStrLn prologue
-                     mapM_ print (compile ast)
-                     putStrLn epilogue
-      Nothing  -> error "Compilation failed"
+      Right ast -> do putStrLn prologue
+                      mapM_ print (compile ast)
+                      putStrLn epilogue
+      Left err  -> error err
 
 parseArgs [] = getContents
 parseArgs path = concat `fmap` mapM readFile path
