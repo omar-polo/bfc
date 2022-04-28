@@ -68,8 +68,8 @@ parser (x:xs) stack =
   case x of
     BracketOpen -> parser xs ([]:stack)
     BracketClose -> case stack of
-                      (y:ys) -> parser xs $ pushexpr (Loop (reverse y)) ys
-                      _      -> Left "unexpected end of loop"
+                      (y:(z:zs)) -> parser xs $ pushexpr (Loop (reverse y)) (z:zs)
+                      _          -> Left "unexpected end of loop"
     _ -> parser xs $ pushexpr expr stack
       where expr = case x of
                      Plus    -> Inc
